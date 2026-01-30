@@ -1,6 +1,6 @@
 """
 WCCCD Virtual Assistant - Chat Interface
-WCCCDbot with LARGE three-dot menu
+With logo and full college name
 """
 
 import streamlit as st
@@ -10,6 +10,15 @@ from anthropic import Anthropic
 import os
 from dotenv import load_dotenv
 from datetime import datetime
+
+import re
+
+def make_links_clickable(text):
+    """Convert URLs in text to clickable HTML links"""
+    # Pattern to match URLs
+    url_pattern = r'(https?://[^\s]+)'
+    # Replace URLs with HTML anchor tags
+    return re.sub(url_pattern, r'<a href="\1" target="_blank" style="color: inherit; text-decoration: underline;">\1</a>', text)
 
 # Load environment variables
 load_dotenv()
@@ -71,7 +80,7 @@ def generate_response(anthropic_client, query, relevant_chunks):
         for chunk in relevant_chunks
     ])
     
-    prompt = f"""You are WCCCDbot, a helpful academic assistant for Wayne County Community College District.
+    prompt = f"""You are a helpful academic assistant for Wayne County Community College District.
 
 TODAY'S DATE: {datetime.now().strftime('%B %d, %Y')}
 IMPORTANT: Only mention events happening TODAY or LATER. Skip any past events.
@@ -89,7 +98,7 @@ For PROGRAM/ADVISING questions:
 3. Suggest realistic semester-by-semester plans when relevant
 4. Compare programs when students are deciding between options
 5. Keep responses 3-5 sentences with clear, actionable information
-6. ALWAYS end with: "For personalized advising, contact an academic advisor at (313) 496-2634."
+6. ALWAYS end with: "For personalized academic advising and official program planning, schedule an appointment with an academic advisor at (313) 496-2634."
 
 For GENERAL/FACTUAL questions:
 1. Keep answer to 1-3 sentences maximum
@@ -106,7 +115,7 @@ For ALL responses:
 EXAMPLES:
 
 Program Question: "What courses do I need for Business Administration?"
-Answer: "The Business Administration A.A.S. requires 62 credits including: ACC 201/202 (Accounting), BUS 221 (Business Law), BUS 251 (Management), MKT 201 (Marketing), and ECO 201/202 (Economics). First semester typically includes ENG 101, MTH 110, BUS 101, and CIS 105. For personalized advising, contact an academic advisor at (313) 496-2634."
+Answer: "The Business Administration A.A.S. requires 62 credits including: ACC 201/202 (Accounting), BUS 221 (Business Law), BUS 251 (Management), MKT 201 (Marketing), and ECO 201/202 (Economics). First semester typically includes ENG 101, MTH 110, BUS 101, and CIS 105. For personalized academic advising and official program planning, schedule an appointment with an academic advisor at (313) 496-2634."
 
 General Question: "When can I register for classes?"
 Answer: "Registration for Spring 2026 begins October 21, 2025. Visit https://www.wcccd.edu/registration for dates and complete information."
@@ -145,7 +154,7 @@ def get_transcript():
 def main():
     # Page configuration
     st.set_page_config(
-        page_title="WCCCDbot",
+        page_title="Wayne County Community College District",
         page_icon="",
         layout="wide"
     )
@@ -192,12 +201,23 @@ def main():
         min-height: 60px !important;
     }
     
-    /* Chat messages */
+    /* Chat messages - Default styling */
     .stChatMessage {
-        background-color: white !important;
         border-radius: 12px !important;
         padding: 16px !important;
         margin: 8px 0 !important;
+    }
+
+    /* Student messages - Light blue background */
+    .stChatMessage[data-testid="chat-message-user"] {
+        background-color: #BBDEFB !important;
+        border: 1px solid #BBDEFB !important;
+    }
+
+    /* Assistant messages - Grey background */
+    .stChatMessage[data-testid="chat-message-assistant"] {
+        background-color: #EEEEEE !important;
+        border: 1px solid #E0E0E0 !important;
     }
     
     /* LARGE THREE-DOT MENU BUTTON - VERY SPECIFIC */
@@ -210,6 +230,7 @@ def main():
         margin: 0 !important;
         line-height: 1 !important;
         font-weight: 900 !important;
+        vertical-align: middle !important;  /* ADD THIS LINE */
     }
     
     button[data-testid="baseButton-secondary"]:hover {
@@ -217,6 +238,56 @@ def main():
         border-radius: 6px !important;
     }
     
+    /* Hide user avatar container completely */
+    [data-testid="chat-message-user"] [data-testid="stChatMessageAvatarContainer"] {
+        display: none !important;
+    }
+
+    /* Make chat message containers transparent */
+    .stChatMessage {
+        background-color: transparent !important;
+    }
+
+    /* Make chat message content transparent */
+    [data-testid="stChatMessageContent"] {
+        background-color: transparent !important;
+        padding: 0px !important;
+    }            
+
+    /* Hide user avatar completely - multiple selectors */
+    [data-testid="chat-message-user"] img {
+        display: none !important;
+    }
+
+    [data-testid="chat-message-user"] [data-testid="stChatMessageAvatarContainer"] {
+        display: none !important;
+        width: 0px !important;
+        height: 0px !important;
+    }
+
+    /* Also hide the avatar column/space */
+    [data-testid="chat-message-user"] > div:first-child {
+        display: none !important;
+    }
+
+    /* Hide user avatar emoji */
+    [data-testid="chat-message-user"] [data-testid="stChatMessageAvatarContainer"] {
+        opacity: 0 !important;
+        width: 0px !important;
+        min-width: 0px !important;
+        margin: 0px !important;
+        padding: 0px !important;
+    }            
+
+    /* Completely remove user avatar column */
+    [data-testid="chat-message-user"] > div:first-child {
+        display: none !important;
+    }
+
+    [data-testid="chat-message-user"] {
+        grid-template-columns: 1fr !important;
+    }            
+
     /* Also target the popover button directly */
     [data-testid="stPopover"] > button {
         font-size: 50px !important;
@@ -229,39 +300,57 @@ def main():
     </style>
     """, unsafe_allow_html=True)
     
-    # BANNER - Two columns only (title and menu)
+    # BANNER - Two columns (logo+title and menu) - EXACT SAME STRUCTURE AS WORKING VERSION
     with st.container():
-        # Create two columns for banner
-        col_title, col_menu = st.columns([10, 0.7])
+        # Create columns for banner - CHANGED to 3 columns for logo
+        col_logo, col_title, col_menu = st.columns([0.7, 9.3, 0.7])
         
-        # Apply blue background to all columns
+        # Apply blue background to all columns - EXACT SAME CSS AS WORKING VERSION
         st.markdown("""
         <style>
-        /* Make all banner columns blue with same height */
+        /* Make all banner columns blue with FIXED height and centered */
         [data-testid="stHorizontalBlock"] [data-testid="column"] {
             background: linear-gradient(135deg, #003DA5 0%, #002870 100%);
-            padding: 20px 0px !important;
-            display: flex;
-            align-items: center;
+            padding: 0px !important;
+            display: flex !important;
+            align-items: center !important;
+            height: 70px !important;
+            min-height: 70px !important;
         }
-        
+
         /* Remove any gaps */
         [data-testid="stHorizontalBlock"] {
             gap: 0px !important;
             background: linear-gradient(135deg, #003DA5 0%, #002870 100%);
-            margin: -1rem -1rem 2rem -1rem;
+            margin: -1rem -0.5rem 2rem 0.5rem;
             box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+            height: 70px !important;
         }
         </style>
         """, unsafe_allow_html=True)
         
+        # LOGO COLUMN - NEW
+        with col_logo:
+            st.markdown("""
+            <div style="padding-left: 35px; display: flex; align-items: center; justify-content: center; height: 100%;">
+            """, unsafe_allow_html=True)
+            try:
+                st.image("logo-footer.png", width=40)
+            except:
+                pass
+            st.markdown('</div>', unsafe_allow_html=True)
+        
+        # TITLE COLUMN - CHANGED TEXT ONLY
         with col_title:
             st.markdown("""
-            <div style="padding-left: 24px; display: flex; align-items: center; height: 100%;">
-                <h1 style="color: white; font-size: 22px; font-weight: 600; margin: 0; line-height: 1;">WCCCDbot</h1>
+            <div style="padding-left: 10px; display: table; height: 70px; width: 100%;">
+                <div style="display: table-cell; vertical-align: middle;">
+                    <h1 style="color: white; font-size: 19px; font-weight: 600; margin: 0; padding: 0; line-height: 1;">Wayne County Community College District</h1>
+                </div>
             </div>
             """, unsafe_allow_html=True)
         
+        # MENU COLUMN - EXACT SAME AS WORKING VERSION
         with col_menu:
             st.markdown("""
             <div style="padding-right: 20px; text-align: right; display: flex; align-items: center; justify-content: flex-end; height: 100%;">
@@ -291,7 +380,7 @@ def main():
                     st.button("Download Transcript", disabled=True, use_container_width=True, help="No conversation to download")
                 
                 # About
-                if st.button("About", key="menu_about", use_container_width=True):
+                if st.button("ℹAbout", key="menu_about", use_container_width=True):
                     st.session_state.show_about = True
                     st.rerun()
             
@@ -301,7 +390,7 @@ def main():
     if st.session_state.show_about:
         st.markdown("---")
         st.info("""
-        ### About WCCCDbot
+        ### ℹAbout WCCCD Virtual Assistant
         
         **What is this?**
         Your 24/7 guide to Wayne County Community College District. Ask questions about:
@@ -312,7 +401,7 @@ def main():
         - Programs and courses
         
         **How it works:**
-        This WCCCDbot searches WCCCD's website and official documents to provide accurate, 
+        This AI assistant searches WCCCD's website and official documents to provide accurate, 
         up-to-date information to help you navigate your college experience.
         
         **Privacy Notice:**
@@ -344,7 +433,7 @@ def main():
     
     # Add welcome message if chat is empty
     if len(st.session_state.messages) == 0:
-        welcome_message = """**Hey, welcome!**
+        welcome_message = """Welcome to WCCCD!
 
 I am a chatbot here to help with your Academic Journey! Feel free to ask any questions related to WCCCD. You can try...
 
@@ -365,41 +454,45 @@ Just a quick note—please don't share sensitive personal information like ID nu
     for message in st.session_state.messages:
         if message["role"] == "assistant":
             with st.chat_message(message["role"], avatar="wildcat_logo.png"):
-                st.markdown(message["content"])
+                # Convert URLs to clickable links
+                content_with_links = make_links_clickable(message["content"])
+                st.markdown(f"""
+                <div style="background-color: #F5F5F5; padding: 12px 16px; border-radius: 12px; border: 1px solid #E0E0E0;">
+                    {content_with_links}
+                </div>
+                """, unsafe_allow_html=True)
         else:
-            with st.chat_message(message["role"], avatar=None):
-                st.markdown(message["content"])
-    
+            # NO st.chat_message wrapper - just plain styled div
+            st.markdown(f"""
+            <div style="background-color: #003DA5; color: white; padding: 12px 16px; border-radius: 12px; border: 1px solid #002870; margin: 8px 0 8px auto; max-width: 80%; display: inline-block;">
+                {message["content"]}
+            </div>
+            """, unsafe_allow_html=True)
+
     # Chat input
-    if query := st.chat_input("Type your question here and press Enter..."):
+    if query := st.chat_input("Ask me a question"):
         # Add user message to chat history
         st.session_state.messages.append({"role": "user", "content": query})
         
-        # Display user message
-        with st.chat_message("user", avatar=None):
-            st.markdown(query)
-        
         # Generate response
-        with st.chat_message("assistant", avatar="wildcat_logo.png"):
-            with st.spinner("Searching and thinking..."):
-                # Search knowledge base
-                relevant_chunks = search_knowledge_base(collection, query, TOP_K_RESULTS)
+        with st.spinner("⏳ One moment..."):
+            # Search knowledge base
+            relevant_chunks = search_knowledge_base(collection, query, TOP_K_RESULTS)
                 
-                if not relevant_chunks:
-                    response = "I couldn't find any relevant information in the college website content. Please try rephrasing your question or contact WCCCD directly at (313) 496-2600 or visit wcccd.edu."
-                else:
-                    # Generate response with Claude
-                    response = generate_response(anthropic_client, query, relevant_chunks)
+            if not relevant_chunks:
+                response = "I couldn't find any relevant information in the college website content. Please try rephrasing your question or contact WCCCD directly at (313) 496-2600 or visit wcccd.edu."
+            else:
+                # Generate response with Claude
+                response = generate_response(anthropic_client, query, relevant_chunks)
                 
-                # Display response
-                st.markdown(response)
-                
-                # Add assistant response to chat history
-                st.session_state.messages.append({
-                    "role": "assistant",
-                    "content": response
-                })
+            # Add assistant response to chat history (MOVED OUTSIDE else)
+            st.session_state.messages.append({
+                "role": "assistant",
+                "content": response
+            })
 
+        # Rerun to display updated history (MOVED OUTSIDE with block)
+        st.rerun()
 
 if __name__ == "__main__":
     main()
